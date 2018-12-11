@@ -1,9 +1,11 @@
 package com.example.satoshi_maemoto.myapplication;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.junit.Rule;
@@ -24,6 +26,7 @@ public class ExampleInstrumentedTest {
         System.loadLibrary("native-lib");
     }
     public native String stringFromJNI();
+    public native boolean getBufferArray(int[][] buffer);
 
     @Rule
     public ActivityTestRule rule = new ActivityTestRule<>(MainActivity.class, true, true);
@@ -64,5 +67,50 @@ public class ExampleInstrumentedTest {
         Thread.sleep(5000);
 
         assertEquals("Hello from C++ to InstrumentedTest", message);
+    }
+
+    private void refreshImageOnUiThread(Bitmap[] bitmaps)
+    {
+        class ShowImagesAction implements Runnable
+        {
+            private Bitmap[] bitmaps;
+            public ShowImagesAction(Bitmap[] bitmaps)
+            {
+                this.bitmaps = bitmaps;
+            }
+
+            @Override
+            public void run() {
+                ImageView imageView01 = rule.getActivity().findViewById(R.id.imageView01);
+                imageView01.setImageBitmap(this.bitmaps[0]);
+
+                ImageView imageView02 = rule.getActivity().findViewById(R.id.imageView02);
+                imageView02.setImageBitmap(this.bitmaps[1]);
+            }
+        }
+
+        this.rule.getActivity().runOnUiThread(new ShowImagesAction(bitmaps));
+    }
+
+    @Test
+    public void imageRefreshTest() throws InterruptedException {
+        int stride = 320;
+        int lines = 240;
+        Bitmap[] bitmaps = {
+                Bitmap.createBitmap(stride, lines, Bitmap.Config.ARGB_8888),
+                Bitmap.createBitmap(stride, lines, Bitmap.Config.ARGB_8888)
+        };
+        int[][] buffers = {
+                new int[stride * lines],
+                new int[stride * lines]
+        };
+
+        assertTrue(getBufferArray(buffers));
+
+        bitmaps[0].setPixels(buffers[0], 0, stride, 0, 0, stride, lines);
+        bitmaps[1].setPixels(buffers[1], 0, stride, 0, 0, stride, lines);
+        this.refreshImageOnUiThread(bitmaps);
+
+        Thread.sleep(5000);
     }
 }
