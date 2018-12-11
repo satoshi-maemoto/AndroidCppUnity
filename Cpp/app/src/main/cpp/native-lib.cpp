@@ -36,6 +36,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_com_example_satoshi_1maemoto_myapplic
         }
 
         env->ReleaseIntArrayElements(element, buffer, 0);
+        env->DeleteLocalRef(element);
     }
     return true;
 }
